@@ -1,6 +1,6 @@
 export const GEMINI_MODELS = [
-  { id: 'gemini-pro', name: 'Gemini Pro' },
-  { id: 'gemini-pro-vision', name: 'Gemini Pro Vision' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
 ];
 
 export const NODE_TYPES = {
@@ -53,7 +53,7 @@ export const DEFAULT_NODE_DATA = {
     videoUrl: null,
   },
   llm: {
-    model: 'gemini-pro',
+    model: 'gemini-2.5-flash',
     prompt: '',
     systemPrompt: '',
     temperature: 0.7,

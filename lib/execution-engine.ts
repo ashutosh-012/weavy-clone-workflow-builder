@@ -123,11 +123,7 @@ async function executeLLMNode(
   }
 
   try {
-    let modelName = nodeData.model || 'gemini-pro';
-    
-    if (modelName === 'gemini-1.5-flash' || modelName === 'Gemini 1.5 Flash') {
-      modelName = 'gemini-pro';
-    }
+    const modelName = 'gemini-2.5-flash';
     
     console.log('Calling Gemini API with model:', modelName);
     
@@ -154,9 +150,6 @@ async function executeLLMNode(
     }
     if (error.message?.includes('quota')) {
       throw new Error('API quota exceeded');
-    }
-    if (error.message?.includes('not found')) {
-      throw new Error('Model not available - using gemini-pro');
     }
     
     throw new Error(`Gemini API: ${error.message}`);
