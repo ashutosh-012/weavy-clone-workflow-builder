@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { NodeProps } from 'reactflow';
+import { NodeProps, Position } from 'reactflow';
 import { Video } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { NodeHandle } from './NodeHandle';
@@ -38,7 +38,7 @@ export const VideoUploadNode = memo(({ data, id, selected }: NodeProps<VideoUplo
         </div>
       </BaseNode>
 
-      <NodeHandle type="source" color={nodeType.color} id="output" />
+      <NodeHandle type="source" position={Position.Right} color={nodeType.color} id="output" label="video" />
     </>
   );
 });

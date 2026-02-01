@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { NodeProps } from 'reactflow';
+import { NodeProps, Position } from 'reactflow';
 import { Image } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { NodeHandle } from './NodeHandle';
@@ -38,7 +38,7 @@ export const ImageUploadNode = memo(({ data, id, selected }: NodeProps<ImageUplo
         </div>
       </BaseNode>
 
-      <NodeHandle type="source" color={nodeType.color} id="output" />
+      <NodeHandle type="source" position={Position.Right} color={nodeType.color} id="output" label="image" />
     </>
   );
 });

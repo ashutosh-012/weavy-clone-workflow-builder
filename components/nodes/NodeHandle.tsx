@@ -1,26 +1,40 @@
 'use client';
 
 import { Handle, Position } from 'reactflow';
-import { cn } from '@/lib/utils';
 
 interface NodeHandleProps {
   type: 'source' | 'target';
-  color?: string;
-  id?: string;
-  className?: string;
+  position: Position;
+  color: string;
+  id: string;
+  label?: string;
+  style?: React.CSSProperties;
 }
 
-export function NodeHandle({ type, color, id, className }: NodeHandleProps) {
+export function NodeHandle({ type, position, color, id, label, style }: NodeHandleProps) {
   return (
-    <Handle
-      type={type}
-      position={type === 'source' ? Position.Right : Position.Left}
-      id={id}
-      className={cn(
-        'h-3 w-3 border-2 border-zinc-900',
-        className
+    <div className="relative" style={style}>
+      {label && type === 'target' && (
+        <span className="absolute -left-2 top-1/2 -translate-x-full -translate-y-1/2 text-xs text-zinc-500">
+          {label}
+        </span>
       )}
-      style={{ backgroundColor: color || '#3b82f6' }}
-    />
+      <Handle
+        type={type}
+        position={position}
+        id={id}
+        style={{
+          background: color,
+          width: 10,
+          height: 10,
+          border: '2px solid #18181b',
+        }}
+      />
+      {label && type === 'source' && (
+        <span className="absolute -right-2 top-1/2 translate-x-full -translate-y-1/2 text-xs text-zinc-500">
+          {label}
+        </span>
+      )}
+    </div>
   );
 }

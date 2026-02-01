@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { NodeProps } from 'reactflow';
+import { NodeProps, Position } from 'reactflow';
 import { Film } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { NodeHandle } from './NodeHandle';
@@ -13,7 +13,7 @@ export const ExtractFrameNode = memo(({ data, id, selected }: NodeProps<ExtractF
 
   return (
     <>
-      <NodeHandle type="target" color={nodeType.color} id="input" />
+      <NodeHandle type="target" position={Position.Left} color={nodeType.color} id="input" />
 
       <BaseNode
         data={data}
@@ -38,7 +38,7 @@ export const ExtractFrameNode = memo(({ data, id, selected }: NodeProps<ExtractF
         </div>
       </BaseNode>
 
-      <NodeHandle type="source" color={nodeType.color} id="output" />
+      <NodeHandle type="source" position={Position.Right} color={nodeType.color} id="output" />
     </>
   );
 });
