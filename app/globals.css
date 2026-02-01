@@ -39,3 +39,80 @@
 .react-flow__attribution {
   display: none;
 }
+
+.react-flow__edge-path {
+  stroke: #3b82f6;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #60a5fa;
+  stroke-width: 3;
+}
+
+.react-flow__connection-path {
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #18181b;
+  transition: all 0.2s;
+}
+
+.react-flow__handle:hover {
+  width: 14px;
+  height: 14px;
+}
+
+.react-flow__handle-connecting {
+  background: #3b82f6 !important;
+}
+
+.react-flow__handle-valid {
+  background: #22c55e !important;
+}
+
+.react-flow__handle-invalid {
+  background: #ef4444 !important;
+  cursor: not-allowed !important;
+}
+
+.react-flow__connection.invalid .react-flow__connection-path {
+  stroke: #ef4444;
+  stroke-dasharray: 5, 5;
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.react-flow__controls {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.react-flow__controls-button {
+  background: #27272a;
+  border-bottom: 1px solid #3f3f46;
+  color: #a1a1aa;
+  transition: all 0.2s;
+}
+
+.react-flow__controls-button:hover {
+  background: #3f3f46;
+  color: #f4f4f5;
+}
+
+.react-flow__minimap {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}

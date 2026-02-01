@@ -51,18 +51,18 @@ export default function WorkflowPage() {
     )
   }
 
-  return (
-    <ReactFlowProvider>
-      <div className="flex h-full flex-col">
-        <Toolbar />
-        <div className="flex flex-1 overflow-hidden">
-          <NodeSidebar />
-          <div className="flex-1">
-            <WorkflowCanvas />
-          </div>
-          <HistorySidebar />
+ return (
+  <ReactFlowProvider>
+    <div className="fixed inset-0 flex flex-col">
+      <Toolbar />
+      <div className="flex flex-1 overflow-hidden">
+        <NodeSidebar />
+        <div className="relative flex-1">
+          <WorkflowCanvas />
         </div>
+        <HistorySidebar />
       </div>
-    </ReactFlowProvider>
-  )
+    </div>
+  </ReactFlowProvider>
+)
 }

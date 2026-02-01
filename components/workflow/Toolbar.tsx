@@ -1,10 +1,9 @@
 'use client';
 
-import { Play, Save, Download, Upload, History, Settings } from 'lucide-react';
+import { Play, Save, Download, History, Maximize, Minimize } from 'lucide-react';
 import { useWorkflowStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export function Toolbar() {
   const {
@@ -15,9 +14,28 @@ export function Toolbar() {
     setIsExecuting,
     setHistorySidebarOpen,
     historySidebarOpen,
+    addExecution,
   } = useWorkflowStore();
+  
   const [saving, setSaving] = useState(false);
-  const router = useRouter();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  };
 
   const handleSave = async () => {
     if (!workflow) return;
@@ -27,10 +45,7 @@ export function Toolbar() {
       const response = await fetch(`/api/workflows/${workflow.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nodes,
-          edges,
-        }),
+        body: JSON.stringify({ nodes, edges }),
       });
 
       if (!response.ok) throw new Error('Failed to save');
@@ -42,9 +57,22 @@ export function Toolbar() {
   };
 
   const handleRun = async () => {
-    if (!workflow || isExecuting) return;
+    if (!workflow || isExecuting || nodes.length === 0) return;
 
     setIsExecuting(true);
+    
+    const execution = {
+      id: `exec-${Date.now()}`,
+      workflowId: workflow.id,
+      status: 'running' as const,
+      scope: 'full' as const,
+      nodeResults: [],
+      startedAt: new Date().toISOString(),
+    };
+
+    addExecution(execution);
+    setHistorySidebarOpen(true);
+
     try {
       const response = await fetch('/api/execute', {
         method: 'POST',
@@ -52,15 +80,29 @@ export function Toolbar() {
         body: JSON.stringify({
           workflowId: workflow.id,
           scope: 'full',
+          nodes,
+          edges,
         }),
       });
 
       if (!response.ok) throw new Error('Execution failed');
 
       const result = await response.json();
-      setHistorySidebarOpen(true);
-    } catch (error) {
-      console.error('Execution error:', error);
+      
+      addExecution({
+        ...execution,
+        status: 'success',
+        nodeResults: result.execution.nodeResults,
+        completedAt: new Date().toISOString(),
+        duration: result.execution.duration,
+      });
+    } catch (error: any) {
+      addExecution({
+        ...execution,
+        status: 'failed',
+        errorMessage: error.message,
+        completedAt: new Date().toISOString(),
+      });
     } finally {
       setIsExecuting(false);
     }
@@ -87,14 +129,26 @@ export function Toolbar() {
   };
 
   return (
-    <div className="flex h-16 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-6">
+    <div className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-zinc-50">
+        <h1 className="text-lg font-semibold text-zinc-50">
           {workflow?.name || 'Untitled Workflow'}
         </h1>
+        <span className="text-xs text-zinc-500">
+          {nodes.length} nodes
+        </span>
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Fullscreen (F11)'}
+        >
+          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
+
         <Button
           variant="outline"
           size="sm"
@@ -123,6 +177,7 @@ export function Toolbar() {
           size="sm"
           onClick={handleRun}
           disabled={isExecuting || nodes.length === 0}
+          className="bg-blue-600 hover:bg-blue-700"
         >
           <Play className="mr-2 h-4 w-4" />
           {isExecuting ? 'Running...' : 'Run'}

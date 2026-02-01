@@ -6,6 +6,9 @@ import ReactFlow, {
   Controls,
   MiniMap,
   BackgroundVariant,
+  ConnectionMode,
+  Connection,
+  Edge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -27,20 +30,60 @@ const nodeTypes = {
 };
 
 export function WorkflowCanvas() {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
-    useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, deleteNode } = useWorkflowStore();
 
   const defaultEdgeOptions = useMemo(
     () => ({
       type: 'smoothstep',
       animated: true,
-      style: { stroke: '#52525b', strokeWidth: 2 },
+      style: { stroke: '#3b82f6', strokeWidth: 2 },
     }),
     []
   );
 
+  const isValidConnection = useCallback(
+    (connection: Connection | Edge) => {
+      if (connection.source === connection.target) {
+        return false;
+      }
+
+      if (!connection.source || !connection.target) {
+        return false;
+      }
+
+      if (!connection.sourceHandle || !connection.targetHandle) {
+        return false;
+      }
+
+      const isDuplicate = edges.some(
+        (edge) =>
+          edge.source === connection.source &&
+          edge.target === connection.target &&
+          edge.sourceHandle === connection.sourceHandle &&
+          edge.targetHandle === connection.targetHandle
+      );
+
+      if (isDuplicate) {
+        return false;
+      }
+
+      return true;
+    },
+    [edges]
+  );
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedNodes = nodes.filter((node) => node.selected);
+        selectedNodes.forEach((node) => deleteNode(node.id));
+      }
+    },
+    [nodes, deleteNode]
+  );
+
   return (
-    <div className="h-full w-full bg-zinc-950">
+    <div className="h-full w-full bg-zinc-950" onKeyDown={handleKeyDown} tabIndex={0}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -49,17 +92,17 @@ export function WorkflowCanvas() {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
+        connectionMode={ConnectionMode.Loose}
+        isValidConnection={isValidConnection}
         fitView
         attributionPosition="bottom-left"
         proOptions={{ hideAttribution: true }}
+        snapToGrid={true}
+        snapGrid={[15, 15]}
+        deleteKeyCode={['Delete', 'Backspace']}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="#27272a"
-        />
-        <Controls className="rounded-lg border border-zinc-800 bg-zinc-900" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
+        <Controls className="rounded-lg border border-zinc-800 bg-zinc-900" showInteractive={false} />
         <MiniMap
           className="rounded-lg border border-zinc-800 bg-zinc-900"
           style={{
@@ -67,7 +110,15 @@ export function WorkflowCanvas() {
           }}
           maskColor="rgba(0, 0, 0, 0.6)"
           nodeColor={(node) => {
-            return '#3f3f46';
+            const colors: Record<string, string> = {
+              text: '#3b82f6',
+              imageUpload: '#22c55e',
+              videoUpload: '#a855f7',
+              llm: '#eab308',
+              cropImage: '#f97316',
+              extractFrame: '#ec4899',
+            };
+            return colors[node.type || 'text'] || '#3f3f46';
           }}
         />
       </ReactFlow>

@@ -45,7 +45,7 @@ export function NodeSidebar() {
         break;
       case 'llm':
         newNode.data.prompt = '';
-        newNode.data.model = 'gemini-pro';
+        newNode.data.model = 'gemini-1.5-flash';
         newNode.data.temperature = 0.7;
         newNode.data.maxTokens = 1024;
         break;
