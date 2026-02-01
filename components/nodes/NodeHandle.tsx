@@ -23,6 +23,9 @@ export function NodeHandle({ type, position, color, id, label, style }: NodeHand
         type={type}
         position={position}
         id={id}
+        isConnectable={true}
+        isConnectableStart={type === 'source'}
+        isConnectableEnd={type === 'target'}
         style={{
           background: color,
           width: 10,

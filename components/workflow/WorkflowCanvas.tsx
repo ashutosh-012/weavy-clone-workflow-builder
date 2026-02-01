@@ -51,7 +51,10 @@ export function WorkflowCanvas() {
         return false;
       }
 
-      if (!connection.sourceHandle || !connection.targetHandle) {
+      const sourceNode = nodes.find(n => n.id === connection.source);
+      const targetNode = nodes.find(n => n.id === connection.target);
+
+      if (!sourceNode || !targetNode) {
         return false;
       }
 
@@ -69,7 +72,7 @@ export function WorkflowCanvas() {
 
       return true;
     },
-    [edges]
+    [edges, nodes]
   );
 
   const handleKeyDown = useCallback(
@@ -92,7 +95,7 @@ export function WorkflowCanvas() {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
-        connectionMode={ConnectionMode.Loose}
+        connectionMode={ConnectionMode.Strict}
         isValidConnection={isValidConnection}
         fitView
         attributionPosition="bottom-left"
