@@ -37,7 +37,8 @@ export interface VideoUploadNodeData extends BaseNodeData {
 export interface LLMNodeData extends BaseNodeData {
   type: 'llm';
   prompt: string;
-  model: 'gemini-pro' | 'gemini-pro-vision';
+  systemPrompt?: string;
+  model: 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-flash';
   temperature: number;
   maxTokens: number;
   output?: string;
@@ -54,7 +55,7 @@ export interface CropImageNodeData extends BaseNodeData {
 
 export interface ExtractFrameNodeData extends BaseNodeData {
   type: 'extractFrame';
-  timestamp: number; // in seconds
+  timestamp: number;
   outputUrl?: string;
 }
 
