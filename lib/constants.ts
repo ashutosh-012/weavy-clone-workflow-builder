@@ -1,93 +1,71 @@
-import { NodeType } from '@/types/nodes';
+export const GEMINI_MODELS = [
+  { id: 'gemini-pro', name: 'Gemini Pro' },
+  { id: 'gemini-pro-vision', name: 'Gemini Pro Vision' },
+];
 
-export const NODE_TYPES: Record<NodeType, { label: string; color: string; icon: string; description: string }> = {
+export const NODE_TYPES = {
   text: {
+    type: 'text',
     label: 'Text Input',
     color: '#3b82f6',
-    icon: 'Type',
-    description: 'Input text data',
+    description: 'Static text input',
   },
   imageUpload: {
+    type: 'imageUpload',
     label: 'Image Upload',
     color: '#22c55e',
-    icon: 'Image',
     description: 'Upload and process images',
   },
   videoUpload: {
+    type: 'videoUpload',
     label: 'Video Upload',
     color: '#a855f7',
-    icon: 'Video',
     description: 'Upload and process videos',
   },
   llm: {
+    type: 'llm',
     label: 'Run LLM',
     color: '#eab308',
-    icon: 'Sparkles',
-    description: 'Process with AI models',
+    description: 'Execute AI language model',
   },
   cropImage: {
+    type: 'cropImage',
     label: 'Crop Image',
     color: '#f97316',
-    icon: 'Crop',
-    description: 'Crop images to specific dimensions',
+    description: 'Crop image to dimensions',
   },
   extractFrame: {
+    type: 'extractFrame',
     label: 'Extract Frame',
     color: '#ec4899',
-    icon: 'Film',
-    description: 'Extract frame from video at timestamp',
+    description: 'Extract frame from video',
   },
 };
 
-export const GEMINI_MODELS = [
-  {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    description: 'Fast and efficient',
-    maxTokens: 8192,
+export const DEFAULT_NODE_DATA = {
+  text: {
+    value: '',
   },
-  {
-    id: 'gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
-    description: 'Most capable model',
-    maxTokens: 32768,
+  imageUpload: {
+    imageUrl: null,
   },
-  {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    description: 'Latest model with improved performance',
-    maxTokens: 8192,
+  videoUpload: {
+    videoUrl: null,
   },
-] as const;
-
-export const EDGE_TYPES = {
-  default: {
-    type: 'smoothstep',
-    animated: true,
+  llm: {
+    model: 'gemini-pro',
+    prompt: '',
+    systemPrompt: '',
+    temperature: 0.7,
+    maxTokens: 1024,
+  },
+  cropImage: {
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  },
+  extractFrame: {
+    timestamp: 0,
   },
 };
-
-export const DEFAULT_VIEWPORT = {
-  x: 0,
-  y: 0,
-  zoom: 1,
-};
-
-export const GRID_SIZE = 20;
-export const NODE_WIDTH = 280;
-export const NODE_HEIGHT = 120;
-
-export const KEYBOARD_SHORTCUTS = {
-  save: 'Ctrl+S',
-  run: 'Ctrl+Enter',
-  delete: 'Delete',
-  duplicate: 'Ctrl+D',
-  undo: 'Ctrl+Z',
-  redo: 'Ctrl+Y',
-  selectAll: 'Ctrl+A',
-};
-
-export const MAX_FILE_SIZE = 50 * 1024 * 1024;
-
-export const SUPPORTED_IMAGE_FORMATS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-export const SUPPORTED_VIDEO_FORMATS = ['video/mp4', 'video/webm', 'video/quicktime'];

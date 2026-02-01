@@ -24,6 +24,21 @@ export default function WorkflowPage() {
     }
   }, [params.id])
 
+  useEffect(() => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, []);
+
   const fetchWorkflow = async (id: string) => {
     try {
       const response = await fetch(`/api/workflows/${id}`)
@@ -51,18 +66,18 @@ export default function WorkflowPage() {
     )
   }
 
- return (
-  <ReactFlowProvider>
-    <div className="fixed inset-0 flex flex-col">
-      <Toolbar />
-      <div className="flex flex-1 overflow-hidden">
-        <NodeSidebar />
-        <div className="relative flex-1">
-          <WorkflowCanvas />
+  return (
+    <ReactFlowProvider>
+      <div className="fixed inset-0 flex flex-col">
+        <Toolbar />
+        <div className="flex flex-1 overflow-hidden">
+          <NodeSidebar />
+          <div className="relative flex-1">
+            <WorkflowCanvas />
+          </div>
+          <HistorySidebar />
         </div>
-        <HistorySidebar />
       </div>
-    </div>
-  </ReactFlowProvider>
-)
+    </ReactFlowProvider>
+  )
 }

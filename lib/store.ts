@@ -5,23 +5,15 @@ import { Workflow } from '@/types/workflow';
 import { Execution } from '@/types/execution';
 
 interface WorkflowState {
-  // Workflow data
   workflow: Workflow | null;
   nodes: Node<WorkflowNodeData>[];
   edges: Edge[];
-
-  // Selection
   selectedNodes: string[];
-
-  // Execution
   executions: Execution[];
   isExecuting: boolean;
-
-  // UI state
   selectedNodeForEdit: string | null;
   historySidebarOpen: boolean;
 
-  // Actions
   setWorkflow: (workflow: Workflow | null) => void;
   setNodes: (nodes: Node<WorkflowNodeData>[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -133,8 +125,12 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   setExecutions: (executions) => set({ executions }),
 
   addExecution: (execution) => {
+    const uniqueExecution = {
+      ...execution,
+      id: `${execution.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
     set({
-      executions: [execution, ...get().executions],
+      executions: [uniqueExecution, ...get().executions],
     });
   },
 

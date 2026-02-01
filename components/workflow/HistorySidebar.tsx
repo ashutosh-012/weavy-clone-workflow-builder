@@ -37,8 +37,7 @@ const statusConfig: Record<
 };
 
 export function HistorySidebar() {
-  const { executions, historySidebarOpen, setHistorySidebarOpen } =
-    useWorkflowStore();
+  const { executions, historySidebarOpen, setHistorySidebarOpen } = useWorkflowStore();
 
   if (!historySidebarOpen) return null;
 
@@ -61,13 +60,14 @@ export function HistorySidebar() {
           </div>
         ) : (
           <div className="space-y-3">
-            {executions.map((execution) => {
+            {executions.map((execution, index) => {
               const status = statusConfig[execution.status];
               const date = new Date(execution.startedAt);
+              const uniqueKey = `${execution.id}-${index}`;
 
               return (
                 <div
-                  key={execution.id}
+                  key={uniqueKey}
                   className="rounded-lg border border-zinc-800 bg-zinc-950 p-3"
                 >
                   <div className="flex items-center justify-between">
@@ -80,10 +80,15 @@ export function HistorySidebar() {
                     </span>
                   </div>
 
+                  {execution.status === 'running' && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-blue-400">
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-blue-400" />
+                      <span>Executing...</span>
+                    </div>
+                  )}
+
                   <div className="mt-2 space-y-1 text-xs text-zinc-400">
-                    <p>
-                      Nodes: {execution.nodeResults.length} executed
-                    </p>
+                    <p>Nodes: {execution.nodeResults.length} executed</p>
                     {execution.duration && (
                       <p>Duration: {(execution.duration / 1000).toFixed(2)}s</p>
                     )}
@@ -92,30 +97,32 @@ export function HistorySidebar() {
                     )}
                   </div>
 
-                  <div className="mt-3 space-y-1">
-                    {execution.nodeResults.slice(0, 3).map((result) => (
-                      <div
-                        key={result.id}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        <div
-                          className={cn(
-                            'h-1.5 w-1.5 rounded-full',
-                            result.status === 'success' && 'bg-green-400',
-                            result.status === 'failed' && 'bg-red-400',
-                            result.status === 'running' && 'bg-blue-400',
-                            result.status === 'pending' && 'bg-zinc-400'
+                  {execution.nodeResults.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {execution.nodeResults.slice(0, 3).map((result, resultIndex) => (
+                        <div key={`${uniqueKey}-result-${resultIndex}`} className="flex items-center gap-2 text-xs">
+                          <div
+                            className={cn(
+                              'h-1.5 w-1.5 rounded-full',
+                              result.status === 'success' && 'bg-green-400',
+                              result.status === 'failed' && 'bg-red-400',
+                              result.status === 'running' && 'bg-blue-400 animate-pulse',
+                              result.status === 'pending' && 'bg-zinc-400'
+                            )}
+                          />
+                          <span className="flex-1 truncate text-zinc-400">{result.nodeName}</span>
+                          {result.duration && (
+                            <span className="text-zinc-600">{result.duration}ms</span>
                           )}
-                        />
-                        <span className="text-zinc-400">{result.nodeName}</span>
-                      </div>
-                    ))}
-                    {execution.nodeResults.length > 3 && (
-                      <p className="text-xs text-zinc-500">
-                        +{execution.nodeResults.length - 3} more
-                      </p>
-                    )}
-                  </div>
+                        </div>
+                      ))}
+                      {execution.nodeResults.length > 3 && (
+                        <p className="text-xs text-zinc-500">
+                          +{execution.nodeResults.length - 3} more
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

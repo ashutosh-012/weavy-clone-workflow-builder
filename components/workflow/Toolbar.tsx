@@ -4,6 +4,7 @@ import { Play, Save, Download, History, Maximize, Minimize } from 'lucide-react'
 import { useWorkflowStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { executeWorkflow } from '@/lib/execution-engine';
 
 export function Toolbar() {
   const {
@@ -15,6 +16,7 @@ export function Toolbar() {
     setHistorySidebarOpen,
     historySidebarOpen,
     addExecution,
+    updateNode,
   } = useWorkflowStore();
   
   const [saving, setSaving] = useState(false);
@@ -28,6 +30,22 @@ export function Toolbar() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    if (!workflow) return;
+
+    const autoSaveInterval = setInterval(() => {
+      if (nodes.length > 0 && !isExecuting) {
+        fetch(`/api/workflows/${workflow.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nodes, edges }),
+        }).catch(err => console.error('Auto-save failed:', err));
+      }
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [workflow, nodes, edges, isExecuting]);
 
   const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
@@ -61,6 +79,10 @@ export function Toolbar() {
 
     setIsExecuting(true);
     
+    nodes.forEach(node => {
+      updateNode(node.id, { status: 'pending', output: undefined });
+    });
+
     const execution = {
       id: `exec-${Date.now()}`,
       workflowId: workflow.id,
@@ -74,27 +96,27 @@ export function Toolbar() {
     setHistorySidebarOpen(true);
 
     try {
-      const response = await fetch('/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workflowId: workflow.id,
-          scope: 'full',
-          nodes,
-          edges,
-        }),
+      const updateNodeStatus = (nodeId: string, status: 'running' | 'success' | 'failed') => {
+        updateNode(nodeId, { status });
+      };
+
+      const result = await executeWorkflow(
+        { nodes, edges },
+        updateNodeStatus
+      );
+
+      result.nodeResults.forEach(nodeResult => {
+        if (nodeResult.outputs?.result && nodeResult.nodeType === 'llm') {
+          updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
+        }
       });
-
-      if (!response.ok) throw new Error('Execution failed');
-
-      const result = await response.json();
       
       addExecution({
         ...execution,
         status: 'success',
-        nodeResults: result.execution.nodeResults,
+        nodeResults: result.nodeResults,
         completedAt: new Date().toISOString(),
-        duration: result.execution.duration,
+        duration: Date.now() - new Date(execution.startedAt).getTime(),
       });
     } catch (error: any) {
       addExecution({
@@ -102,6 +124,10 @@ export function Toolbar() {
         status: 'failed',
         errorMessage: error.message,
         completedAt: new Date().toISOString(),
+      });
+      
+      nodes.forEach(node => {
+        updateNode(node.id, { status: 'failed' });
       });
     } finally {
       setIsExecuting(false);
@@ -144,7 +170,7 @@ export function Toolbar() {
           variant="ghost"
           size="sm"
           onClick={toggleFullscreen}
-          title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Fullscreen (F11)'}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
         >
           {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
         </Button>

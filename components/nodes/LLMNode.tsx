@@ -112,8 +112,19 @@ export const LLMNode = memo(({ data, id, selected }: NodeProps<LLMNodeData>) => 
 
           {data.output && (
             <div className="border-t border-zinc-800 pt-2">
-              <label className="text-xs text-zinc-400">Output</label>
-              <div className="mt-1 max-h-32 overflow-auto rounded bg-zinc-800 p-2 text-xs text-zinc-300">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-zinc-400">Output</label>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(data.output || '');
+                  }}
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="mt-1 max-h-32 overflow-auto rounded bg-zinc-800 p-2 text-xs text-zinc-300 whitespace-pre-wrap">
                 {data.output}
               </div>
             </div>
