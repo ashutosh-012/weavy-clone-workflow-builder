@@ -1,69 +1,57 @@
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { workflowCreateSchema } from '@/lib/validations';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: workflows, error } = await supabase
-      .from('workflows')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false });
+    const mockWorkflows = [
+      {
+        id: '1',
+        name: 'Sample Workflow',
+        description: 'A sample workflow',
+        userId,
+        nodes: [],
+        edges: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
 
-    if (error) throw error;
-
-    return NextResponse.json({ workflows });
+    return NextResponse.json({ workflows: mockWorkflows });
   } catch (error) {
-    console.error('Error fetching workflows:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch workflows' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch workflows' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const validated = workflowCreateSchema.parse(body);
+    const { name = 'Untitled Workflow' } = body;
 
-    const { data: workflow, error } = await supabase
-      .from('workflows')
-      .insert({
-        name: validated.name || 'Untitled Workflow',
-        description: validated.description,
-        nodes: validated.nodes || [],
-        edges: validated.edges || [],
-        viewport: validated.viewport,
-        user_id: user.id,
-      })
-      .select()
-      .single();
+    const newWorkflow = {
+      id: `workflow-${Date.now()}`,
+      name,
+      description: '',
+      userId,
+      nodes: [],
+      edges: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    if (error) throw error;
-
-    return NextResponse.json({ workflow }, { status: 201 });
+    return NextResponse.json({ workflow: newWorkflow });
   } catch (error) {
-    console.error('Error creating workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to create workflow' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create workflow' }, { status: 500 });
   }
 }

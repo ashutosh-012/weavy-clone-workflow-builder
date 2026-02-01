@@ -1,55 +1,43 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ReactFlowProvider } from 'reactflow';
-import { supabase } from '@/lib/supabase';
-import { useWorkflowStore } from '@/lib/store';
-import { WorkflowCanvas } from '@/components/workflow/WorkflowCanvas';
-import { Toolbar } from '@/components/workflow/Toolbar';
-import { NodeSidebar } from '@/components/workflow/NodeSidebar';
-import { HistorySidebar } from '@/components/workflow/HistorySidebar';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react'
+import { useParams, redirect } from 'next/navigation'
+import { ReactFlowProvider } from 'reactflow'
+import { useWorkflowStore } from '@/lib/store'
+import { WorkflowCanvas } from '@/components/workflow/WorkflowCanvas'
+import { Toolbar } from '@/components/workflow/Toolbar'
+import { NodeSidebar } from '@/components/workflow/NodeSidebar'
+import { HistorySidebar } from '@/components/workflow/HistorySidebar'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function WorkflowPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { setWorkflow, setNodes, setEdges, workflow } = useWorkflowStore();
+  const params = useParams()
+  const { setWorkflow, setNodes, setEdges, workflow } = useWorkflowStore()
 
   useEffect(() => {
-    checkAuth();
     if (params.id) {
-      fetchWorkflow(params.id as string);
+      fetchWorkflow(params.id as string)
     }
 
     return () => {
-      useWorkflowStore.getState().reset();
-    };
-  }, [params.id]);
-
-  const checkAuth = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/sign-in');
+      useWorkflowStore.getState().reset()
     }
-  };
+  }, [params.id])
 
   const fetchWorkflow = async (id: string) => {
     try {
-      const response = await fetch(`/api/workflows/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch workflow');
+      const response = await fetch(`/api/workflows/${id}`)
+      if (!response.ok) throw new Error('Failed to fetch workflow')
 
-      const data = await response.json();
-      setWorkflow(data.workflow);
-      setNodes(data.workflow.nodes);
-      setEdges(data.workflow.edges);
+      const data = await response.json()
+      setWorkflow(data.workflow)
+      setNodes(data.workflow.nodes)
+      setEdges(data.workflow.edges)
     } catch (error) {
-      console.error('Failed to fetch workflow:', error);
-      router.push('/dashboard');
+      console.error('Failed to fetch workflow:', error)
+      redirect('/dashboard')
     }
-  };
+  }
 
   if (!workflow) {
     return (
@@ -60,7 +48,7 @@ export default function WorkflowPage() {
           <Skeleton className="h-full w-full" />
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -76,5 +64,5 @@ export default function WorkflowPage() {
         </div>
       </div>
     </ReactFlowProvider>
-  );
+  )
 }

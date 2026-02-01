@@ -1,33 +1,21 @@
-'use client';
+import { currentUser } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { ArrowRight, Workflow, Zap, Sparkles } from 'lucide-react'
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Workflow, Zap, Sparkles } from 'lucide-react';
-
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      router.push('/dashboard');
-    }
-  };
+export default async function HomePage() {
+  const user = await currentUser()
+  
+  if (user) {
+    redirect('/dashboard')
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <header className="border-b border-zinc-800 bg-zinc-900">
         <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-6">
-          <h1 className="text-xl font-bold text-zinc-50">WorkflowAI</h1>
+          <h1 className="text-xl font-bold text-zinc-50">FlowAI</h1>
           <div className="flex items-center gap-4">
             <Link href="/sign-in">
               <Button variant="ghost">Sign In</Button>
@@ -105,5 +93,5 @@ export default function Home() {
         </div>
       </main>
     </div>
-  );
+  )
 }
