@@ -13,6 +13,10 @@ export const TextNode = memo(({ data, id, selected }: NodeProps<TextNodeData>) =
   const nodeType = NODE_TYPES.text;
   const { updateNode } = useWorkflowStore();
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <>
       <BaseNode
@@ -27,16 +31,16 @@ export const TextNode = memo(({ data, id, selected }: NodeProps<TextNodeData>) =
           <textarea
             value={data.value}
             onChange={(e) => updateNode(id, { value: e.target.value })}
-            placeholder="Enter text here..."
-            className="w-full resize-none rounded bg-zinc-800 p-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            rows={3}
+            onKeyDown={handleKeyDown}
+            placeholder="Enter text..."
+            className="h-24 w-full resize-none rounded bg-zinc-800 p-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             onClick={(e) => e.stopPropagation()}
           />
           <p className="text-xs text-zinc-500">{data.value.length} characters</p>
         </div>
       </BaseNode>
 
-      <NodeHandle type="source" position={Position.Right} color={nodeType.color} id="output" label="text" />
+      <NodeHandle type="source" position={Position.Right} color={nodeType.color} id="text" label="text" />
     </>
   );
 });

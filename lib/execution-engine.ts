@@ -104,6 +104,7 @@ async function executeLLMNode(
   
   let systemPrompt = nodeData.systemPrompt || '';
   let userMessage = nodeData.prompt || '';
+  let imageData: string | null = null;
   
   for (const edge of inputEdges) {
     const sourceOutput = context.results.get(edge.source);
@@ -111,11 +112,13 @@ async function executeLLMNode(
       systemPrompt = String(sourceOutput);
     } else if (edge.targetHandle === 'user_message' && sourceOutput) {
       userMessage = String(sourceOutput);
+    } else if (edge.targetHandle === 'images' && sourceOutput) {
+      imageData = String(sourceOutput);
     }
   }
 
-  if (!userMessage) {
-    throw new Error('No prompt provided');
+  if (!userMessage && !imageData) {
+    throw new Error('No prompt or image provided');
   }
 
   if (!genAI || !API_KEY) {
@@ -123,7 +126,11 @@ async function executeLLMNode(
   }
 
   try {
-    const modelName = 'gemini-2.5-flash';
+    let modelName = nodeData.model || 'gemini-2.5-flash';
+    
+    if (modelName === 'gemini-1.5-flash') {
+      modelName = 'gemini-2.5-flash';
+    }
     
     console.log('Calling Gemini API with model:', modelName);
     
@@ -131,11 +138,34 @@ async function executeLLMNode(
       model: modelName,
     });
     
-    const prompt = systemPrompt 
-      ? `${systemPrompt}\n\nUser: ${userMessage}`
-      : userMessage;
+    let parts: any[] = [];
+    
+    if (systemPrompt) {
+      parts.push({ text: systemPrompt + '\n\n' });
+    }
+    
+    if (userMessage) {
+      parts.push({ text: userMessage });
+    }
+    
+    if (imageData) {
+      if (imageData.startsWith('data:image')) {
+        const base64Data = imageData.split(',')[1];
+        const mimeType = imageData.split(';')[0].split(':')[1];
+        
+        parts.push({
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        });
+      }
+    }
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts }],
+    });
+
     const response = result.response;
     const text = response.text();
     

@@ -13,6 +13,14 @@ export const CropImageNode = memo(({ data, id, selected }: NodeProps<CropImageNo
   const nodeType = NODE_TYPES.cropImage;
   const { updateNode } = useWorkflowStore();
 
+  const handleInputChange = (field: string, value: number) => {
+    updateNode(id, { [field]: value });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <>
       <NodeHandle type="target" position={Position.Left} color="#22c55e" id="image" label="image" />
@@ -32,7 +40,8 @@ export const CropImageNode = memo(({ data, id, selected }: NodeProps<CropImageNo
                 type="number"
                 min="0"
                 value={data.x}
-                onChange={(e) => updateNode(id, { x: parseInt(e.target.value) || 0 })}
+                onChange={(e) => handleInputChange('x', parseInt(e.target.value) || 0)}
+                onKeyDown={handleKeyDown}
                 className="mt-1 w-full rounded bg-zinc-800 p-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 onClick={(e) => e.stopPropagation()}
               />
@@ -43,7 +52,8 @@ export const CropImageNode = memo(({ data, id, selected }: NodeProps<CropImageNo
                 type="number"
                 min="0"
                 value={data.y}
-                onChange={(e) => updateNode(id, { y: parseInt(e.target.value) || 0 })}
+                onChange={(e) => handleInputChange('y', parseInt(e.target.value) || 0)}
+                onKeyDown={handleKeyDown}
                 className="mt-1 w-full rounded bg-zinc-800 p-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 onClick={(e) => e.stopPropagation()}
               />
@@ -57,7 +67,8 @@ export const CropImageNode = memo(({ data, id, selected }: NodeProps<CropImageNo
                 type="number"
                 min="1"
                 value={data.width}
-                onChange={(e) => updateNode(id, { width: parseInt(e.target.value) || 100 })}
+                onChange={(e) => handleInputChange('width', parseInt(e.target.value) || 100)}
+                onKeyDown={handleKeyDown}
                 className="mt-1 w-full rounded bg-zinc-800 p-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 onClick={(e) => e.stopPropagation()}
               />
@@ -68,7 +79,8 @@ export const CropImageNode = memo(({ data, id, selected }: NodeProps<CropImageNo
                 type="number"
                 min="1"
                 value={data.height}
-                onChange={(e) => updateNode(id, { height: parseInt(e.target.value) || 100 })}
+                onChange={(e) => handleInputChange('height', parseInt(e.target.value) || 100)}
+                onKeyDown={handleKeyDown}
                 className="mt-1 w-full rounded bg-zinc-800 p-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 onClick={(e) => e.stopPropagation()}
               />
