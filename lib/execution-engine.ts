@@ -238,21 +238,13 @@ async function executeExtractFrameNode(
   if (!videoUrl) throw new Error('No video data available');
 
   try {
-    const response = await fetch('/api/process/extract-frame', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        videoUrl,
-        timestamp: nodeData.timestamp || 0,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Frame extraction failed');
+    const { extractFrameFromVideo } = await import('@/lib/video-utils');
+    const result = await extractFrameFromVideo(videoUrl, nodeData.timestamp || 0);
+    
+    if (result.warning) {
+      console.warn('Frame extraction warning:', result.warning);
     }
-
-    const result = await response.json();
+    
     return result.frameUrl;
   } catch (error: any) {
     throw new Error(`Extract frame error: ${error.message}`);
