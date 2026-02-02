@@ -113,8 +113,14 @@ export function Toolbar() {
       console.log('Execution completed:', result.nodeResults.length, 'nodes');
 
       result.nodeResults.forEach(nodeResult => {
-        if (nodeResult.outputs?.result && nodeResult.nodeType === 'llm') {
-          updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
+        if (nodeResult.outputs?.result) {
+          if (nodeResult.nodeType === 'llm') {
+            updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
+          } else if (nodeResult.nodeType === 'cropImage') {
+            updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
+          } else if (nodeResult.nodeType === 'extractFrame') {
+            updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
+          }
         }
       });
       

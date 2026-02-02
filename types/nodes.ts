@@ -1,17 +1,7 @@
-export type NodeStatus = 'pending' | 'running' | 'success' | 'failed' | 'skipped';
-
-export type NodeType =
-  | 'text'
-  | 'imageUpload'
-  | 'videoUpload'
-  | 'llm'
-  | 'cropImage'
-  | 'extractFrame';
-
 export interface BaseNodeData {
+  type: string;
   label: string;
-  type: NodeType;
-  status?: NodeStatus;
+  status?: 'pending' | 'running' | 'success' | 'failed';
 }
 
 export interface TextNodeData extends BaseNodeData {
@@ -31,14 +21,13 @@ export interface VideoUploadNodeData extends BaseNodeData {
   videoUrl: string | null;
   fileName?: string;
   fileSize?: number;
-  duration?: number;
 }
 
 export interface LLMNodeData extends BaseNodeData {
   type: 'llm';
+  model: string;
   prompt: string;
   systemPrompt?: string;
-  model: 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-flash';
   temperature: number;
   maxTokens: number;
   output?: string;
@@ -50,13 +39,13 @@ export interface CropImageNodeData extends BaseNodeData {
   y: number;
   width: number;
   height: number;
-  outputUrl?: string;
+  output?: string;
 }
 
 export interface ExtractFrameNodeData extends BaseNodeData {
   type: 'extractFrame';
   timestamp: number;
-  outputUrl?: string;
+  output?: string;
 }
 
 export type WorkflowNodeData =
@@ -71,12 +60,11 @@ export interface NodeResultData {
   id: string;
   nodeId: string;
   nodeName: string;
-  nodeType: NodeType;
-  status: NodeStatus;
-  inputs?: Record<string, any>;
+  nodeType: string;
+  status: 'success' | 'failed' | 'running' | 'pending';
   outputs?: Record<string, any>;
   errorMessage?: string;
-  startedAt?: string;
+  startedAt: string;
   completedAt?: string;
   duration?: number;
 }

@@ -169,7 +169,29 @@ async function executeCropNode(
   const imageUrl = context.results.get(inputEdge.source);
   if (!imageUrl) throw new Error('No image data available');
 
-  return `Cropped: ${nodeData.width}x${nodeData.height} at (${nodeData.x},${nodeData.y})`;
+  try {
+    const response = await fetch('/api/process/crop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl,
+        x: nodeData.x || 0,
+        y: nodeData.y || 0,
+        width: nodeData.width || 100,
+        height: nodeData.height || 100,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Crop failed');
+    }
+
+    const result = await response.json();
+    return result.croppedImageUrl;
+  } catch (error: any) {
+    throw new Error(`Crop error: ${error.message}`);
+  }
 }
 
 async function executeExtractFrameNode(
@@ -185,7 +207,7 @@ async function executeExtractFrameNode(
   const videoUrl = context.results.get(inputEdge.source);
   if (!videoUrl) throw new Error('No video data available');
 
-  return `Frame extracted at ${nodeData.timestamp}s`;
+  return `Frame extracted at ${nodeData.timestamp}s from video`;
 }
 
 function getExecutionOrder(nodes: Node[], edges: Edge[]): Node[] {
