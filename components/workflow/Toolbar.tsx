@@ -16,6 +16,7 @@ export function Toolbar() {
     setHistorySidebarOpen,
     historySidebarOpen,
     addExecution,
+    updateExecution,
     updateNode,
   } = useWorkflowStore();
   
@@ -83,8 +84,10 @@ export function Toolbar() {
       updateNode(node.id, { status: 'pending', output: undefined });
     });
 
+    const executionId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const execution = {
-      id: `exec-${Date.now()}`,
+      id: executionId,
       workflowId: workflow.id,
       status: 'running' as const,
       scope: 'full' as const,
@@ -94,6 +97,8 @@ export function Toolbar() {
 
     addExecution(execution);
     setHistorySidebarOpen(true);
+
+    console.log('Started execution:', executionId);
 
     try {
       const updateNodeStatus = (nodeId: string, status: 'running' | 'success' | 'failed') => {
@@ -105,22 +110,28 @@ export function Toolbar() {
         updateNodeStatus
       );
 
+      console.log('Execution completed:', result.nodeResults.length, 'nodes');
+
       result.nodeResults.forEach(nodeResult => {
         if (nodeResult.outputs?.result && nodeResult.nodeType === 'llm') {
           updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
         }
       });
       
-      addExecution({
-        ...execution,
+      const duration = Date.now() - new Date(execution.startedAt).getTime();
+      
+      console.log('Updating execution to SUCCESS, duration:', duration);
+      
+      updateExecution(executionId, {
         status: 'success',
         nodeResults: result.nodeResults,
         completedAt: new Date().toISOString(),
-        duration: Date.now() - new Date(execution.startedAt).getTime(),
+        duration,
       });
     } catch (error: any) {
-      addExecution({
-        ...execution,
+      console.error('Execution failed:', error);
+      
+      updateExecution(executionId, {
         status: 'failed',
         errorMessage: error.message,
         completedAt: new Date().toISOString(),
@@ -131,6 +142,7 @@ export function Toolbar() {
       });
     } finally {
       setIsExecuting(false);
+      console.log('Execution finished');
     }
   };
 

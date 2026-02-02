@@ -28,6 +28,7 @@ interface WorkflowState {
   setSelectedNodeForEdit: (nodeId: string | null) => void;
   setExecutions: (executions: Execution[]) => void;
   addExecution: (execution: Execution) => void;
+  updateExecution: (executionId: string, updates: Partial<Execution>) => void;
   setIsExecuting: (isExecuting: boolean) => void;
   setHistorySidebarOpen: (open: boolean) => void;
   reset: () => void;
@@ -125,12 +126,18 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   setExecutions: (executions) => set({ executions }),
 
   addExecution: (execution) => {
-    const uniqueExecution = {
-      ...execution,
-      id: `${execution.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    };
+    console.log('Adding execution:', execution.id, execution.status);
     set({
-      executions: [uniqueExecution, ...get().executions],
+      executions: [execution, ...get().executions],
+    });
+  },
+
+  updateExecution: (executionId, updates) => {
+    console.log('Updating execution:', executionId, 'to status:', updates.status);
+    set({
+      executions: get().executions.map(exec =>
+        exec.id === executionId ? { ...exec, ...updates } : exec
+      ),
     });
   },
 
