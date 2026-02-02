@@ -21,14 +21,14 @@ export interface TextNodeData extends BaseNodeData {
 
 export interface ImageUploadNodeData extends BaseNodeData {
   type: 'imageUpload';
-  imageUrl?: string;
+  imageUrl: string | null;
   fileName?: string;
   fileSize?: number;
 }
 
 export interface VideoUploadNodeData extends BaseNodeData {
   type: 'videoUpload';
-  videoUrl?: string;
+  videoUrl: string | null;
   fileName?: string;
   fileSize?: number;
   duration?: number;

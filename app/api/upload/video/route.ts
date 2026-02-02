@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,29 +15,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Upload to Supabase Storage
-    const fileName = `${user.id}/${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from('workflow-assets')
-      .upload(fileName, file);
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: 'File too large (max 50MB)' }, { status: 400 });
+    }
 
-    if (error) throw error;
-
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('workflow-assets').getPublicUrl(fileName);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
     return NextResponse.json({
-      url: publicUrl,
+      url: dataUrl,
       fileName: file.name,
       fileSize: file.size,
-      fileType: file.type,
+      mimeType: file.type,
     });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: 'Upload failed' },
       { status: 500 }
     );
   }
