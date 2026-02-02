@@ -1,5 +1,8 @@
-import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { db } from '@/lib/db';
+import { workflows } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -7,25 +10,28 @@ export async function GET(
 ) {
   try {
     const { userId } = await auth();
-    
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const workflow = {
-      id: params.id,
-      name: 'My Workflow',
-      description: 'Workflow description',
-      userId,
-      nodes: [],
-      edges: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const { id } = await params;
+
+    const [workflow] = await db
+      .select()
+      .from(workflows)
+      .where(and(eq(workflows.id, id), eq(workflows.userId, userId)));
+
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ workflow });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch workflow' }, { status: 500 });
+    console.error('Error fetching workflow:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch workflow' },
+      { status: 500 }
+    );
   }
 }
 
@@ -35,27 +41,40 @@ export async function PUT(
 ) {
   try {
     const { userId } = await auth();
-    
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
-    const { nodes, edges, name, description } = body;
+    const { name, description, nodes, edges } = body;
 
-    const updatedWorkflow = {
-      id: params.id,
-      name: name || 'My Workflow',
-      description: description || '',
-      userId,
-      nodes: nodes || [],
-      edges: edges || [],
-      updatedAt: new Date().toISOString(),
+    const updateData: any = {
+      updatedAt: new Date(),
     };
 
-    return NextResponse.json({ workflow: updatedWorkflow });
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (nodes !== undefined) updateData.nodes = nodes;
+    if (edges !== undefined) updateData.edges = edges;
+
+    const [workflow] = await db
+      .update(workflows)
+      .set(updateData)
+      .where(and(eq(workflows.id, id), eq(workflows.userId, userId)))
+      .returning();
+
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ workflow });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update workflow' }, { status: 500 });
+    console.error('Error updating workflow:', error);
+    return NextResponse.json(
+      { error: 'Failed to update workflow' },
+      { status: 500 }
+    );
   }
 }
 
@@ -65,13 +84,27 @@ export async function DELETE(
 ) {
   try {
     const { userId } = await auth();
-    
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true });
+    const { id } = await params;
+
+    const [workflow] = await db
+      .delete(workflows)
+      .where(and(eq(workflows.id, id), eq(workflows.userId, userId)))
+      .returning();
+
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Workflow deleted' });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete workflow' }, { status: 500 });
+    console.error('Error deleting workflow:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete workflow' },
+      { status: 500 }
+    );
   }
 }
