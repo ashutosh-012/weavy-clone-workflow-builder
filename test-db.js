@@ -1,25 +1,34 @@
-const connectionString = process.env.DATABASE_URL;
+require('dotenv').config();
+const { Pool } = require('pg');
 
-console.log('Testing database connection...');
-console.log('Connection string:', connectionString ? 'Found' : 'NOT FOUND');
+console.log('🔍 Testing database connection...');
 
-if (connectionString) {
-  const url = new URL(connectionString);
-  console.log('Host:', url.hostname);
-  console.log('Database:', url.pathname.slice(1));
-  console.log('User:', url.username);
-  
-  // Test DNS resolution
-  const dns = require('dns');
-  dns.lookup(url.hostname, (err, address) => {
-    if (err) {
-      console.log('❌ DNS Error:', err.message);
-      console.log('   The database host does not exist!');
-    } else {
-      console.log('✅ DNS resolved to:', address);
-      console.log('   Database host is valid!');
-    }
-  });
-} else {
-  console.log('❌ DATABASE_URL not found in environment');
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not found in environment');
+  process.exit(1);
 }
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+(async () => {
+  try {
+    const client = await pool.connect();
+    console.log('✅ Successfully connected to Neon Postgres');
+
+    const res = await client.query('SELECT 1 as test');
+    console.log('✅ Test query result:', res.rows);
+
+    client.release();
+    await pool.end();
+    console.log('🎉 Connection test completed successfully');
+  } catch (err) {
+    console.error('❌ Database connection failed');
+    console.error(err.message);
+    process.exit(1);
+  }
+})();
