@@ -237,7 +237,26 @@ async function executeExtractFrameNode(
   const videoUrl = context.results.get(inputEdge.source);
   if (!videoUrl) throw new Error('No video data available');
 
-  return `Frame extracted at ${nodeData.timestamp}s from video`;
+  try {
+    const response = await fetch('/api/process/extract-frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoUrl,
+        timestamp: nodeData.timestamp || 0,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Frame extraction failed');
+    }
+
+    const result = await response.json();
+    return result.frameUrl;
+  } catch (error: any) {
+    throw new Error(`Extract frame error: ${error.message}`);
+  }
 }
 
 function getExecutionOrder(nodes: Node[], edges: Edge[]): Node[] {

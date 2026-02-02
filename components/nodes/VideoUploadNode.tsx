@@ -69,6 +69,10 @@ export const VideoUploadNode = memo(({ data, id, selected }: NodeProps<VideoUplo
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <>
       <BaseNode
@@ -86,11 +90,12 @@ export const VideoUploadNode = memo(({ data, id, selected }: NodeProps<VideoUplo
                 type="file"
                 accept="video/*"
                 onChange={handleFileSelect}
+                onKeyDown={handleKeyDown}
                 className="hidden"
-                id={`file-input-${id}`}
+                id={`video-input-${id}`}
               />
               <label
-                htmlFor={`file-input-${id}`}
+                htmlFor={`video-input-${id}`}
                 className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-800/50 p-6 transition-colors hover:border-purple-500 hover:bg-zinc-800"
               >
                 {uploading ? (

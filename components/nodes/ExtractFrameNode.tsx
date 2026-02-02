@@ -28,18 +28,24 @@ export const ExtractFrameNode = memo(({ data, id, selected }: NodeProps<ExtractF
         color={nodeType.color}
         icon={<Film className="h-4 w-4" />}
       >
-        <div className="space-y-2">
-          <label className="text-xs text-zinc-400">Timestamp (seconds)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            value={data.timestamp}
-            onChange={(e) => updateNode(id, { timestamp: parseFloat(e.target.value) || 0 })}
-            onKeyDown={handleKeyDown}
-            className="w-full rounded bg-zinc-800 p-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-pink-500"
-            onClick={(e) => e.stopPropagation()}
-          />
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-zinc-400">Timestamp (seconds)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={data.timestamp}
+              onChange={(e) => updateNode(id, { timestamp: parseFloat(e.target.value) || 0 })}
+              onKeyDown={handleKeyDown}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1 w-full rounded bg-zinc-800 p-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-pink-500"
+            />
+          </div>
+
+          <div className="text-xs text-zinc-500">
+            Extract a single frame from the input video at the specified timestamp
+          </div>
 
           {data.output && (
             <div className="border-t border-zinc-800 pt-2">
