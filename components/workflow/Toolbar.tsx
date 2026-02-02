@@ -1,232 +1,139 @@
-'use client';
+'use client'
 
-import { Play, Save, Download, History, Maximize, Minimize } from 'lucide-react';
-import { useWorkflowStore } from '@/lib/store';
-import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
-import { executeWorkflow } from '@/lib/execution-engine';
+import { useRouter } from 'next/navigation'
+import { useWorkflowStore } from '@/lib/store'
+import { 
+  ArrowLeft, 
+  Save, 
+  Play, 
+  Loader2, 
+  Clock,
+  Check
+} from 'lucide-react'
+import { useState } from 'react'
 
-export function Toolbar() {
-  const {
-    workflow,
-    nodes,
-    edges,
-    isExecuting,
-    setIsExecuting,
-    setHistorySidebarOpen,
-    historySidebarOpen,
-    addExecution,
-    updateExecution,
-    updateNode,
-  } = useWorkflowStore();
-  
-  const [saving, setSaving] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+interface ToolbarProps {
+  saving?: boolean
+  lastSaved?: Date | null
+  onSave?: () => void
+}
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
+export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
+  const router = useRouter()
+  const { workflow, setWorkflow } = useWorkflowStore()
+  const [isEditing, setIsEditing] = useState(false)
+  const [tempName, setTempName] = useState('')
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  useEffect(() => {
-    if (!workflow) return;
-
-    const autoSaveInterval = setInterval(() => {
-      if (nodes.length > 0 && !isExecuting) {
-        fetch(`/api/workflows/${workflow.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nodes, edges }),
-        }).catch(err => console.error('Auto-save failed:', err));
-      }
-    }, 30000);
-
-    return () => clearInterval(autoSaveInterval);
-  }, [workflow, nodes, edges, isExecuting]);
-
-  const toggleFullscreen = async () => {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen();
-    } else {
-      await document.exitFullscreen();
-    }
-  };
-
-  const handleSave = async () => {
-    if (!workflow) return;
-
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/workflows/${workflow.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes, edges }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save');
-    } catch (error) {
-      console.error('Save error:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRun = async () => {
-    if (!workflow || isExecuting || nodes.length === 0) return;
-
-    setIsExecuting(true);
+  const formatLastSaved = (date: Date | null) => {
+    if (!date) return ''
+    const now = new Date()
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
     
-    nodes.forEach(node => {
-      updateNode(node.id, { status: 'pending', output: undefined });
-    });
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
 
-    const executionId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const handleNameClick = () => {
+    setTempName(workflow?.name || 'Untitled Workflow')
+    setIsEditing(true)
+  }
 
-    const execution = {
-      id: executionId,
-      workflowId: workflow.id,
-      status: 'running' as const,
-      scope: 'full' as const,
-      nodeResults: [],
-      startedAt: new Date().toISOString(),
-    };
-
-    addExecution(execution);
-    setHistorySidebarOpen(true);
-
-    console.log('Started execution:', executionId);
-
-    try {
-      const updateNodeStatus = (nodeId: string, status: 'running' | 'success' | 'failed') => {
-        updateNode(nodeId, { status });
-      };
-
-      const result = await executeWorkflow(
-        { nodes, edges },
-        updateNodeStatus
-      );
-
-      console.log('Execution completed:', result.nodeResults.length, 'nodes');
-
-      result.nodeResults.forEach(nodeResult => {
-        if (nodeResult.outputs?.result) {
-          if (nodeResult.nodeType === 'llm') {
-            updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
-          } else if (nodeResult.nodeType === 'cropImage') {
-            updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
-          } else if (nodeResult.nodeType === 'extractFrame') {
-            updateNode(nodeResult.nodeId, { output: String(nodeResult.outputs.result) });
-          }
-        }
-      });
-      
-      const duration = Date.now() - new Date(execution.startedAt).getTime();
-      
-      console.log('Updating execution to SUCCESS, duration:', duration);
-      
-      updateExecution(executionId, {
-        status: 'success',
-        nodeResults: result.nodeResults,
-        completedAt: new Date().toISOString(),
-        duration,
-      });
-    } catch (error: any) {
-      console.error('Execution failed:', error);
-      
-      updateExecution(executionId, {
-        status: 'failed',
-        errorMessage: error.message,
-        completedAt: new Date().toISOString(),
-      });
-      
-      nodes.forEach(node => {
-        updateNode(node.id, { status: 'failed' });
-      });
-    } finally {
-      setIsExecuting(false);
-      console.log('Execution finished');
+  const handleNameSave = () => {
+    if (workflow && tempName.trim()) {
+      setWorkflow({ ...workflow, name: tempName.trim() })
     }
-  };
+    setIsEditing(false)
+  }
 
-  const handleExport = () => {
-    if (!workflow) return;
-
-    const data = {
-      name: workflow.name,
-      nodes,
-      edges,
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${workflow.name.replace(/\s+/g, '-').toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleNameSave()
+    } else if (e.key === 'Escape') {
+      setIsEditing(false)
+    }
+  }
 
   return (
-    <div className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4">
+    <header className="h-14 border-b border-gray-800 bg-[#0d0d14] flex items-center justify-between px-4 shrink-0">
+      {/* Left Section */}
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-zinc-50">
-          {workflow?.name || 'Untitled Workflow'}
-        </h1>
-        <span className="text-xs text-zinc-500">
-          {nodes.length} nodes
-        </span>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+          title="Back to Dashboard"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-400" />
+        </button>
+
+        {/* Workflow Name */}
+        {isEditing ? (
+          <input
+            type="text"
+            value={tempName}
+            onChange={(e) => setTempName(e.target.value)}
+            onBlur={handleNameSave}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            className="bg-gray-800 text-white px-3 py-1.5 rounded-lg border border-purple-500 
+                     focus:outline-none text-sm font-medium min-w-[200px]"
+          />
+        ) : (
+          <button
+            onClick={handleNameClick}
+            className="text-white font-medium hover:text-purple-400 transition-colors"
+          >
+            {workflow?.name || 'Untitled Workflow'}
+          </button>
+        )}
+
+        {/* Save Status */}
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          {saving ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : lastSaved ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-green-500" />
+              <span>Saved {formatLastSaved(lastSaved)}</span>
+            </>
+          ) : null}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleFullscreen}
-          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        >
-          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setHistorySidebarOpen(!historySidebarOpen)}
-        >
-          <History className="mr-2 h-4 w-4" />
-          History
-        </Button>
-
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleSave}
+      {/* Right Section */}
+      <div className="flex items-center gap-3">
+        {/* Manual Save Button */}
+        <button
+          onClick={onSave}
           disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg
+                   font-medium hover:bg-gray-700 transition-colors disabled:opacity-50
+                   text-sm"
         >
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          Save
+        </button>
 
-        <Button
-          size="sm"
-          onClick={handleRun}
-          disabled={isExecuting || nodes.length === 0}
-          className="bg-blue-600 hover:bg-blue-700"
+        {/* Run Button */}
+        <button
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600
+                   text-white rounded-lg font-medium hover:from-purple-500 hover:to-pink-500 
+                   transition-all duration-200 shadow-lg shadow-purple-500/25 text-sm"
         >
-          <Play className="mr-2 h-4 w-4" />
-          {isExecuting ? 'Running...' : 'Run'}
-        </Button>
+          <Play className="w-4 h-4" />
+          Run All
+        </button>
       </div>
-    </div>
-  );
+    </header>
+  )
 }

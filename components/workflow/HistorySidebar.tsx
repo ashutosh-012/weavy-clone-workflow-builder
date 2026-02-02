@@ -1,134 +1,212 @@
-'use client';
+'use client'
 
-import { X, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useWorkflowStore } from '@/lib/store';
-import { ExecutionStatus } from '@/types/execution';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react'
+import { 
+  History, 
+  Clock, 
+  CheckCircle2, 
+  XCircle, 
+  Loader2,
+  ChevronRight,
+  X
+} from 'lucide-react'
 
-const statusConfig: Record<
-  ExecutionStatus,
-  { icon: React.ReactNode; color: string; label: string }
-> = {
-  pending: {
-    icon: <Clock className="h-4 w-4" />,
-    color: 'text-zinc-400',
-    label: 'Pending',
-  },
-  running: {
-    icon: <Clock className="h-4 w-4 animate-spin" />,
-    color: 'text-blue-400',
-    label: 'Running',
-  },
-  success: {
-    icon: <CheckCircle className="h-4 w-4" />,
-    color: 'text-green-400',
-    label: 'Success',
-  },
-  failed: {
-    icon: <XCircle className="h-4 w-4" />,
-    color: 'text-red-400',
-    label: 'Failed',
-  },
-  partial: {
-    icon: <AlertCircle className="h-4 w-4" />,
-    color: 'text-yellow-400',
-    label: 'Partial',
-  },
-};
+interface Execution {
+  id: string
+  status: string
+  scope: string
+  startedAt: string
+  completedAt: string | null
+  duration: number | null
+  nodeResults: any[]
+}
 
-export function HistorySidebar() {
-  const { executions, historySidebarOpen, setHistorySidebarOpen } = useWorkflowStore();
+interface HistorySidebarProps {
+  workflowId?: string
+}
 
-  if (!historySidebarOpen) return null;
+export function HistorySidebar({ workflowId }: HistorySidebarProps) {
+  const [executions, setExecutions] = useState<Execution[]>([])
+  const [loading, setLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(true)
+
+  useEffect(() => {
+    if (workflowId) {
+      fetchExecutions()
+    }
+  }, [workflowId])
+
+  const fetchExecutions = async () => {
+    if (!workflowId) return
+
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/workflows/${workflowId}/executions`)
+      if (response.ok) {
+        const data = await response.json()
+        setExecutions(data.executions || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch executions:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4 text-green-400" />
+      case 'failed':
+      case 'error':
+        return <XCircle className="w-4 h-4 text-red-400" />
+      case 'running':
+        return <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+      case 'completed':
+        return 'text-green-400'
+      case 'failed':
+      case 'error':
+        return 'text-red-400'
+      case 'running':
+        return 'text-yellow-400'
+      default:
+        return 'text-gray-400'
+    }
+  }
+
+  const getScopeLabel = (scope: string) => {
+    switch (scope) {
+      case 'full':
+        return 'Full Run'
+      case 'partial':
+        return 'Partial Run'
+      case 'single':
+        return 'Single Node'
+      default:
+        return scope
+    }
+  }
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 p-2 bg-[#0d0d14] border border-gray-800 
+                 rounded-l-lg hover:bg-gray-800 transition-colors"
+      >
+        <History className="w-5 h-5 text-gray-400" />
+      </button>
+    )
+  }
 
   return (
-    <div className="flex h-full w-80 flex-col border-l border-zinc-800 bg-zinc-900">
-      <div className="flex items-center justify-between border-b border-zinc-800 p-4">
-        <h2 className="text-lg font-semibold text-zinc-50">Execution History</h2>
+    <div className="w-72 border-l border-gray-800 bg-[#0d0d14] flex flex-col shrink-0">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <History className="w-5 h-5 text-purple-400" />
+          <h2 className="text-white font-semibold">History</h2>
+        </div>
         <button
-          onClick={() => setHistorySidebarOpen(false)}
-          className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
+          onClick={() => setIsOpen(false)}
+          className="p-1 hover:bg-gray-800 rounded transition-colors"
         >
-          <X className="h-4 w-4" />
+          <X className="w-4 h-4 text-gray-400" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
-        {executions.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-zinc-500">No executions yet</p>
+      {/* Executions List */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+          </div>
+        ) : executions.length === 0 ? (
+          <div className="p-6 text-center">
+            <div className="w-14 h-14 bg-gray-800/50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <History className="w-7 h-7 text-gray-600" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">No runs yet</p>
+            <p className="text-gray-600 text-xs mt-1">
+              Execute your workflow to see history
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {executions.map((execution, index) => {
-              const status = statusConfig[execution.status];
-              const date = new Date(execution.startedAt);
-              const uniqueKey = `${execution.id}-${index}`;
-
-              return (
-                <div
-                  key={uniqueKey}
-                  className="rounded-lg border border-zinc-800 bg-zinc-950 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className={cn('flex items-center gap-2', status.color)}>
-                      {status.icon}
-                      <span className="text-sm font-medium">{status.label}</span>
-                    </div>
-                    <span className="text-xs text-zinc-500">
-                      {date.toLocaleTimeString()}
+          <div className="p-2 space-y-1">
+            {executions.map((execution) => (
+              <button
+                key={execution.id}
+                className="w-full p-3 rounded-lg hover:bg-gray-800/50 transition-colors
+                         text-left group border border-transparent hover:border-gray-700"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(execution.status)}
+                    <span className={`text-sm font-medium capitalize ${getStatusColor(execution.status)}`}>
+                      {execution.status}
                     </span>
                   </div>
-
-                  {execution.status === 'running' && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-blue-400">
-                      <div className="h-2 w-2 animate-pulse rounded-full bg-blue-400" />
-                      <span>Executing...</span>
-                    </div>
-                  )}
-
-                  <div className="mt-2 space-y-1 text-xs text-zinc-400">
-                    <p>Nodes: {execution.nodeResults.length} executed</p>
-                    {execution.duration && (
-                      <p>Duration: {(execution.duration / 1000).toFixed(2)}s</p>
-                    )}
-                    {execution.errorMessage && (
-                      <p className="text-red-400">{execution.errorMessage}</p>
-                    )}
-                  </div>
-
-                  {execution.nodeResults.length > 0 && (
-                    <div className="mt-3 space-y-1">
-                      {execution.nodeResults.slice(0, 3).map((result, resultIndex) => (
-                        <div key={`${uniqueKey}-result-${resultIndex}`} className="flex items-center gap-2 text-xs">
-                          <div
-                            className={cn(
-                              'h-1.5 w-1.5 rounded-full',
-                              result.status === 'success' && 'bg-green-400',
-                              result.status === 'failed' && 'bg-red-400',
-                              result.status === 'running' && 'bg-blue-400 animate-pulse',
-                              result.status === 'pending' && 'bg-zinc-400'
-                            )}
-                          />
-                          <span className="flex-1 truncate text-zinc-400">{result.nodeName}</span>
-                          {result.duration && (
-                            <span className="text-zinc-600">{result.duration}ms</span>
-                          )}
-                        </div>
-                      ))}
-                      {execution.nodeResults.length > 3 && (
-                        <p className="text-xs text-zinc-500">
-                          +{execution.nodeResults.length - 3} more
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">
+                    {getScopeLabel(execution.scope)}
+                  </span>
                 </div>
-              );
-            })}
+
+                <p className="text-gray-500 text-xs mb-1">
+                  {formatDate(execution.startedAt)} at {formatTime(execution.startedAt)}
+                </p>
+
+                {execution.duration && (
+                  <p className="text-xs text-gray-600">
+                    Duration: {(execution.duration / 1000).toFixed(2)}s
+                  </p>
+                )}
+
+                <ChevronRight className="w-4 h-4 text-gray-700 group-hover:text-gray-400 
+                                       absolute right-3 top-1/2 -translate-y-1/2 transition-colors" />
+              </button>
+            ))}
           </div>
         )}
       </div>
+
+      {/* Refresh Button */}
+      {executions.length > 0 && (
+        <div className="p-3 border-t border-gray-800">
+          <button
+            onClick={fetchExecutions}
+            disabled={loading}
+            className="w-full py-2 text-sm text-gray-400 hover:text-white 
+                     hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Refreshing...' : 'Refresh History'}
+          </button>
+        </div>
+      )}
     </div>
-  );
+  )
 }

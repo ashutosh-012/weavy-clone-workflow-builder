@@ -1,155 +1,310 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { Plus, Calendar, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { 
+  Plus, 
+  Workflow, 
+  Trash2, 
+  Clock, 
+  MoreVertical,
+  Search,
+  FolderOpen,
+  Loader2
+} from 'lucide-react';
 
-interface Workflow {
-  id: string
-  name: string
-  description?: string
-  nodes: any[]
-  edges: any[]
-  updatedAt: string
+interface WorkflowItem {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [workflows, setWorkflows] = useState<Workflow[]>([])
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
+  const [workflows, setWorkflows] = useState<WorkflowItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Fetch workflows
   useEffect(() => {
-    fetchWorkflows()
-  }, [])
+    if (isLoaded && user) {
+      fetchWorkflows();
+    }
+  }, [isLoaded, user]);
 
   const fetchWorkflows = async () => {
     try {
-      const response = await fetch('/api/workflows')
-      const data = await response.json()
-      setWorkflows(data.workflows || [])
+      setLoading(true);
+      const response = await fetch('/api/workflows');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkflows(data.workflows || []);
+      }
     } catch (error) {
-      console.error('Failed to fetch workflows:', error)
+      console.error('Failed to fetch workflows:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleCreateWorkflow = async () => {
+  const createWorkflow = async () => {
     try {
+      setCreating(true);
       const response = await fetch('/api/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Untitled Workflow' }),
-      })
+        body: JSON.stringify({ 
+          name: 'Untitled Workflow',
+          description: '' 
+        }),
+      });
 
       if (response.ok) {
-        const { workflow } = await response.json()
-        router.push(`/workflows/${workflow.id}`)
+        const data = await response.json();
+        router.push(`/workflow/${data.workflow.id}`);
       }
     } catch (error) {
-      console.error('Failed to create workflow:', error)
+      console.error('Failed to create workflow:', error);
+    } finally {
+      setCreating(false);
     }
-  }
+  };
 
-  const handleDeleteWorkflow = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this workflow?')) return
-
+  const deleteWorkflow = async (id: string) => {
     try {
-      await fetch(`/api/workflows/${id}`, { method: 'DELETE' })
-      setWorkflows(workflows.filter((w) => w.id !== id))
-    } catch (error) {
-      console.error('Failed to delete workflow:', error)
-    }
-  }
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'DELETE',
+      });
 
-  if (loading) {
+      if (response.ok) {
+        setWorkflows(workflows.filter(w => w.id !== id));
+        setShowDeleteModal(false);
+        setDeleteId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete workflow:', error);
+    }
+  };
+
+  const openWorkflow = (id: string) => {
+    router.push(`/workflow/${id}`);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const filteredWorkflows = workflows.filter(w =>
+    w.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (!isLoaded || loading) {
     return (
-      <div className="h-full bg-zinc-950 p-8">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48" />
-            ))}
-          </div>
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-gray-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading workflows...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="h-full overflow-auto bg-zinc-950 p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0a0a0f]">
+      {/* Header */}
+      <header className="border-b border-gray-800 bg-[#0d0d14]">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <Workflow className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">FlowAI</h1>
+                <p className="text-xs text-gray-500">Workflow Builder</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-white">{user?.fullName || user?.firstName}</p>
+                <p className="text-xs text-gray-500">{user?.primaryEmailAddress?.emailAddress}</p>
+              </div>
+              <img
+                src={user?.imageUrl || '/default-avatar.png'}
+                alt="Profile"
+                className="w-10 h-10 rounded-full border-2 border-purple-500/30"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Title & Actions */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-zinc-50">My Workflows</h1>
-            <p className="mt-1 text-zinc-400">
-              Create and manage your AI workflow automations
+            <h2 className="text-2xl font-bold text-white">My Workflows</h2>
+            <p className="text-gray-500 mt-1">
+              {workflows.length} workflow{workflows.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <Button onClick={handleCreateWorkflow}>
-            <Plus className="mr-2 h-4 w-4" />
+
+          <button
+            onClick={createWorkflow}
+            disabled={creating}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 
+                     text-white rounded-xl font-medium hover:from-purple-500 hover:to-pink-500 
+                     transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                     shadow-lg shadow-purple-500/25"
+          >
+            {creating ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Plus className="w-5 h-5" />
+            )}
             New Workflow
-          </Button>
+          </button>
         </div>
 
-        {workflows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-800 py-24">
-            <h3 className="mb-2 text-lg font-medium text-zinc-50">
-              No workflows yet
+        {/* Search Bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search workflows..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-[#12121a] border border-gray-800 rounded-xl
+                     text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50
+                     transition-colors"
+          />
+        </div>
+
+        {/* Workflows Grid */}
+        {filteredWorkflows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-20 h-20 bg-[#12121a] rounded-2xl flex items-center justify-center mb-4">
+              <FolderOpen className="w-10 h-10 text-gray-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              {searchQuery ? 'No workflows found' : 'No workflows yet'}
             </h3>
-            <p className="mb-4 text-sm text-zinc-400">
-              Get started by creating your first workflow
+            <p className="text-gray-500 mb-6">
+              {searchQuery 
+                ? 'Try a different search term' 
+                : 'Create your first workflow to get started'}
             </p>
-            <Button onClick={handleCreateWorkflow}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Workflow
-            </Button>
+            {!searchQuery && (
+              <button
+                onClick={createWorkflow}
+                disabled={creating}
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white 
+                         rounded-xl font-medium hover:bg-purple-500 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Create Workflow
+              </button>
+            )}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {workflows.map((workflow) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredWorkflows.map((workflow) => (
               <div
                 key={workflow.id}
-                className="group relative rounded-lg border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-zinc-700"
+                className="group bg-[#12121a] border border-gray-800 rounded-xl p-5
+                         hover:border-purple-500/30 transition-all duration-200 cursor-pointer"
+                onClick={() => openWorkflow(workflow.id)}
               >
-                <button
-                  onClick={() => router.push(`/workflows/${workflow.id}`)}
-                  className="w-full text-left"
-                >
-                  <h3 className="mb-2 text-lg font-semibold text-zinc-50">
-                    {workflow.name}
-                  </h3>
-                  {workflow.description && (
-                    <p className="mb-4 text-sm text-zinc-400">
-                      {workflow.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-4 text-xs text-zinc-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(workflow.updatedAt).toLocaleDateString()}
-                    </span>
-                    <span>{workflow.nodes?.length || 0} nodes</span>
+                {/* Card Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 
+                                rounded-xl flex items-center justify-center">
+                    <Workflow className="w-6 h-6 text-purple-400" />
                   </div>
-                </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteId(workflow.id);
+                      setShowDeleteModal(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/10 
+                             rounded-lg transition-all duration-200"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                  </button>
+                </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDeleteWorkflow(workflow.id)
-                  }}
-                  className="absolute right-4 top-4 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-800 hover:text-red-400 group-hover:opacity-100"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {/* Card Content */}
+                <h3 className="text-lg font-semibold text-white mb-1 truncate">
+                  {workflow.name}
+                </h3>
+                <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                  {workflow.description || 'No description'}
+                </p>
+
+                {/* Card Footer */}
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Updated {formatDate(workflow.updatedAt)}</span>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deleteId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#12121a] border border-gray-800 rounded-2xl p-6 max-w-md w-full mx-4">
+            <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-4">
+              <Trash2 className="w-6 h-6 text-red-400" />
+            </div>
+            
+            <h3 className="text-xl font-semibold text-white mb-2">Delete Workflow?</h3>
+            <p className="text-gray-400 mb-6">
+              This action cannot be undone. All nodes and execution history will be permanently deleted.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteId(null);
+                }}
+                className="flex-1 px-4 py-2.5 bg-gray-800 text-white rounded-xl 
+                         font-medium hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteWorkflow(deleteId)}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl 
+                         font-medium hover:bg-red-500 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
