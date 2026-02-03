@@ -1,73 +1,73 @@
-'use client';
+'use client'
 
-import { memo, useState, useRef } from 'react';
-import { NodeProps, Position } from 'reactflow';
-import { Image as ImageIcon, Upload, X } from 'lucide-react';
-import { BaseNode } from './BaseNode';
-import { NodeHandle } from './NodeHandle';
-import { ImageUploadNodeData } from '@/types/nodes';
-import { NODE_TYPES } from '@/lib/constants';
-import { useWorkflowStore } from '@/lib/store';
+import { memo, useState, useRef } from 'react'
+import { NodeProps, Position } from 'reactflow'
+import { Image as ImageIcon, Upload, X } from 'lucide-react'
+import { BaseNode } from './BaseNode'
+import { NodeHandle } from './NodeHandle'
+import { ImageUploadNodeData } from '@/types/nodes'
+import { NODE_TYPES } from '@/lib/constants'
+import { useWorkflowStore } from '@/lib/store'
 
 export const ImageUploadNode = memo(({ data, id, selected }: NodeProps<ImageUploadNodeData>) => {
-  const nodeType = NODE_TYPES.imageUpload;
-  const { updateNode } = useWorkflowStore();
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const nodeType = NODE_TYPES.imageUpload
+  const { updateNode } = useWorkflowStore()
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
+      alert('Please select an image file')
+      return
     }
 
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      alert('File too large. Maximum size is 10MB.');
-      return;
+      alert('File too large. Maximum size is 10MB.')
+      return
     }
 
-    setUploading(true);
+    setUploading(true)
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const formData = new FormData()
+      formData.append('file', file)
 
       const response = await fetch('/api/upload/image', {
         method: 'POST',
         body: formData,
-      });
+      })
 
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) throw new Error('Upload failed')
 
-      const result = await response.json();
-      
+      const result = await response.json()
+
       updateNode(id, {
         imageUrl: result.url,
         fileName: file.name,
         fileSize: file.size,
-      });
+      })
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
+      console.error('Upload error:', error)
+      alert('Upload failed. Please try again.')
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
-  };
+  }
 
   const handleRemove = () => {
     updateNode(id, {
-      imageUrl: null,
+      imageUrl: undefined,
       fileName: undefined,
       fileSize: undefined,
-    });
+    })
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''
     }
-  };
+  }
 
   return (
     <>
@@ -139,7 +139,7 @@ export const ImageUploadNode = memo(({ data, id, selected }: NodeProps<ImageUplo
 
       <NodeHandle type="source" position={Position.Right} color={nodeType.color} id="image" label="image" />
     </>
-  );
-});
+  )
+})
 
-ImageUploadNode.displayName = 'ImageUploadNode';
+ImageUploadNode.displayName = 'ImageUploadNode'

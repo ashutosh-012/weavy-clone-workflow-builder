@@ -2,13 +2,12 @@
 
 import { useRouter } from 'next/navigation'
 import { useWorkflowStore } from '@/lib/store'
-import { 
-  ArrowLeft, 
-  Save, 
-  Play, 
-  Loader2, 
-  Clock,
-  Check
+import {
+  ArrowLeft,
+  Save,
+  Play,
+  Loader2,
+  Check,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -16,9 +15,15 @@ interface ToolbarProps {
   saving?: boolean
   lastSaved?: Date | null
   onSave?: () => void
+  onRun?: () => void
 }
 
-export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
+export function Toolbar({
+  saving = false,
+  lastSaved,
+  onSave,
+  onRun,
+}: ToolbarProps) {
   const router = useRouter()
   const { workflow, setWorkflow } = useWorkflowStore()
   const [isEditing, setIsEditing] = useState(false)
@@ -28,12 +33,12 @@ export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
     if (!date) return ''
     const now = new Date()
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
-    
+
     if (diff < 60) return 'Just now'
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
     })
   }
 
@@ -59,17 +64,14 @@ export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
 
   return (
     <header className="h-14 border-b border-gray-800 bg-[#0d0d14] flex items-center justify-between px-4 shrink-0">
-      {/* Left Section */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push('/dashboard')}
           className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-          title="Back to Dashboard"
         >
           <ArrowLeft className="w-5 h-5 text-gray-400" />
         </button>
 
-        {/* Workflow Name */}
         {isEditing ? (
           <input
             type="text"
@@ -78,8 +80,7 @@ export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
             onBlur={handleNameSave}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="bg-gray-800 text-white px-3 py-1.5 rounded-lg border border-purple-500 
-                     focus:outline-none text-sm font-medium min-w-[200px]"
+            className="bg-gray-800 text-white px-3 py-1.5 rounded-lg border border-purple-500 focus:outline-none text-sm font-medium min-w-[200px]"
           />
         ) : (
           <button
@@ -90,7 +91,6 @@ export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
           </button>
         )}
 
-        {/* Save Status */}
         <div className="flex items-center gap-2 text-xs text-gray-500">
           {saving ? (
             <>
@@ -106,15 +106,11 @@ export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
         </div>
       </div>
 
-      {/* Right Section */}
       <div className="flex items-center gap-3">
-        {/* Manual Save Button */}
         <button
           onClick={onSave}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg
-                   font-medium hover:bg-gray-700 transition-colors disabled:opacity-50
-                   text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -124,11 +120,9 @@ export function Toolbar({ saving = false, lastSaved, onSave }: ToolbarProps) {
           Save
         </button>
 
-        {/* Run Button */}
         <button
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600
-                   text-white rounded-lg font-medium hover:from-purple-500 hover:to-pink-500 
-                   transition-all duration-200 shadow-lg shadow-purple-500/25 text-sm"
+          onClick={onRun}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-500 hover:to-pink-500 transition-all duration-200 shadow-lg shadow-purple-500/25 text-sm"
         >
           <Play className="w-4 h-4" />
           Run All

@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
-        router.push(`/workflow/${data.workflow.id}`);
+        router.push(`/workflows/${data.workflow.id}`);
       }
     } catch (error) {
       console.error('Failed to create workflow:', error);
@@ -94,7 +94,7 @@ export default function DashboardPage() {
   };
 
   const openWorkflow = (id: string) => {
-    router.push(`/workflow/${id}`);
+    router.push(`/workflows/${id}`);
   };
 
   const formatDate = (dateString: string) => {
