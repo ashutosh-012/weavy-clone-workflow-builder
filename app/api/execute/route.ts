@@ -15,45 +15,54 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { workflowId, scope = 'full', nodes = [], edges = [] } = body
 
+    if (!workflowId) {
+      return NextResponse.json({ error: 'Workflow ID required' }, { status: 400 })
+    }
+
     const startedAt = new Date()
 
     try {
       const result = await executeWorkflow({ nodes, edges })
 
-      const executionData = {
-        id: `exec-${Date.now()}`,
-        workflowId,
-        userId,
-        status: 'success' as const,
-        scope,
-        nodeResults: result.nodeResults,
-        startedAt,
-        completedAt: new Date(),
-        duration: Date.now() - startedAt.getTime(),
-      }
+      const hasFailures = result.nodeResults.some((r) => r.status === 'failed')
 
-      await db.insert(executions).values(executionData)
+      const [execution] = await db
+        .insert(executions)
+        .values({
+          workflowId,
+          userId,
+          status: hasFailures ? 'failed' : 'success',
+          scope,
+          nodeResults: result.nodeResults,
+          startedAt,
+          completedAt: new Date(),
+          duration: Date.now() - startedAt.getTime(),
+        })
+        .returning()
 
-      return NextResponse.json({ execution: executionData })
+      return NextResponse.json({ execution })
     } catch (error: any) {
-      const executionData = {
-        id: `exec-${Date.now()}`,
-        workflowId,
-        userId,
-        status: 'failed' as const,
-        scope,
-        nodeResults: [],
-        errorMessage: error.message,
-        startedAt,
-        completedAt: new Date(),
-        duration: Date.now() - startedAt.getTime(),
-      }
+      console.error('Execution error:', error)
 
-      await db.insert(executions).values(executionData)
+      const [execution] = await db
+        .insert(executions)
+        .values({
+          workflowId,
+          userId,
+          status: 'failed',
+          scope,
+          nodeResults: [],
+          errorMessage: error.message,
+          startedAt,
+          completedAt: new Date(),
+          duration: Date.now() - startedAt.getTime(),
+        })
+        .returning()
 
-      return NextResponse.json({ execution: executionData })
+      return NextResponse.json({ execution })
     }
-  } catch (error) {
-    return NextResponse.json({ error: 'Execution failed' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Execute API error:', error)
+    return NextResponse.json({ error: error.message || 'Execution failed' }, { status: 500 })
   }
 }
