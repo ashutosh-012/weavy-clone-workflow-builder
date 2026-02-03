@@ -1,229 +1,141 @@
-# WorkflowAI - Professional Workflow Builder
+# Workflow Builder
 
-A production-ready Next.js 14 workflow builder application with visual node editing, AI integration, and real-time execution.
+A visual workflow builder for automating tasks with AI. Connect nodes, upload media, run LLM prompts, and process images and videos.
 
-## Features
+Built with Next.js, React Flow, and PostgreSQL.
 
-- **Visual Workflow Builder**: Drag-and-drop interface powered by React Flow
-- **Node Types**:
-  - Text Input
-  - Image Upload
-  - Video Upload
-  - LLM (Google Gemini)
-  - Crop Image
-  - Extract Frame
-- **Real-time Execution**: Execute workflows with detailed tracking
-- **Execution History**: View past runs and results
-- **Authentication**: Secure user authentication with Supabase
-- **Database**: PostgreSQL with Supabase for data persistence
-- **State Management**: Zustand for efficient state management
-- **Type Safety**: Full TypeScript support with Zod validation
+## What It Does
 
-## Tech Stack
+This app lets you build workflows visually by connecting different nodes together. Each node does something specific:
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS
-- **Database**: Supabase (PostgreSQL)
-- **State Management**: Zustand
-- **Workflow Canvas**: React Flow
-- **Validation**: Zod
-- **AI**: Google Gemini API
-- **Icons**: Lucide React
+- Text Input: Add text that flows to other nodes
+- Image Upload: Upload images for processing
+- Video Upload: Upload videos for frame extraction
+- Run LLM: Send prompts to Google Gemini AI
+- Crop Image: Crop uploaded images
+- Extract Frame: Pull a frame from a video at a specific timestamp
 
-## Prerequisites
+You connect these nodes together, click Run All, and the workflow executes in order.
 
-- Node.js 18+ and npm
-- Supabase account
-- Google AI API key
+## Screenshots
 
-## Setup Instructions
+### Sign In
+![Sign In](./public/screenshots/signin-login.png)
 
-### 1. Clone and Install
+### Dashboard
+![Dashboard](./public/screenshots/dashboard.png)
+
+Shows all your saved workflows. Click one to edit it or create a new one.
+
+### Workflow Editor
+![Interface](./public/screenshots/interface.png)
+
+The main canvas where you drag nodes, connect them, and build your workflow.
+
+### Building a Workflow
+![Working](./public/screenshots/working.png)
+
+Drag nodes from the sidebar and connect them together.
+
+![Working 2](./public/screenshots/working2.png)
+
+![Working 3](./public/screenshots/working3.png)
+
+### Execution
+![Working 4](./public/screenshots/working4.png)
+
+Click Run All and the workflow executes. Results show in the History sidebar.
+
+## How to Run Locally
+
+1. Clone the repo
+
+```bash
+git clone https://github.com/ashutosh-012/weavy-clone-workflow-builder.git
+cd weavy-clone-workflow-builder
+```
+
+2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Database Setup
+3. Set up environment variables
 
-The database is already configured with Supabase. The schema includes:
-- `users` - User profiles
-- `workflows` - Workflow definitions
-- `executions` - Execution history
-- `node_results` - Individual node execution results
+Create a `.env` file in the root:
 
-All tables have Row Level Security (RLS) enabled for secure data access.
-
-### 3. Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Google Gemini AI
-GOOGLE_AI_API_KEY=your_google_ai_api_key
-
-# App
+```
+DATABASE_URL=your_neon_postgres_url
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
+CLERK_SECRET_KEY=your_clerk_secret
+GOOGLE_AI_API_KEY=your_gemini_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-#### Getting Your Credentials:
+4. Push database schema
 
-**Supabase:**
-1. Go to [supabase.com](https://supabase.com)
-2. Create a new project or use existing
-3. Go to Settings > API
-4. Copy the Project URL and anon/public key
+```bash
+npx drizzle-kit push
+```
 
-**Google AI:**
-1. Go to [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
-2. Create an API key
-3. Copy the key
-
-### 4. Create Storage Bucket (Optional)
-
-If you want to use file uploads:
-
-1. Go to your Supabase dashboard
-2. Navigate to Storage
-3. Create a new bucket named `workflow-assets`
-4. Set it to public
-
-### 5. Run Development Server
+5. Run the dev server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open http://localhost:3000
 
-### 6. Build for Production
+## Tech Stack
 
-```bash
-npm run build
-npm start
-```
+- Next.js 14 with App Router
+- React Flow for the node canvas
+- Drizzle ORM with PostgreSQL on Neon
+- Clerk for authentication
+- Google Gemini API for LLM
+- Tailwind CSS
+- Zustand for state management
 
 ## Project Structure
 
 ```
-├── app/
-│   ├── (auth)/
-│   │   ├── sign-in/
-│   │   └── sign-up/
-│   ├── (dashboard)/
-│   │   ├── dashboard/
-│   │   └── workflows/[id]/
-│   ├── api/
-│   │   ├── workflows/
-│   │   ├── execute/
-│   │   ├── llm/
-│   │   └── upload/
-│   ├── layout.tsx
-│   ├── page.tsx
-│   └── globals.css
-├── components/
-│   ├── ui/
-│   ├── layout/
-│   ├── workflow/
-│   └── nodes/
-├── lib/
-│   ├── supabase.ts
-│   ├── store.ts
-│   ├── constants.ts
-│   ├── validations.ts
-│   └── execution-engine.ts
-├── types/
-│   ├── nodes.ts
-│   ├── workflow.ts
-│   └── execution.ts
-└── hooks/
+app/
+  dashboard/       - workflow list page
+  workflows/[id]/  - workflow editor page
+  api/
+    workflows/     - CRUD for workflows
+    execute/       - run workflow endpoint
+    process/       - image and video processing
+components/
+  nodes/           - all node types
+  workflow/        - canvas, toolbar, sidebars
+lib/
+  db/              - database connection and schema
+  store.ts         - zustand store
+  execution-engine.ts - runs the workflow
 ```
 
-## Usage
+## How Workflows Work
 
-### Creating a Workflow
+1. Drag nodes from the left sidebar onto the canvas
+2. Connect them by dragging from output handles to input handles
+3. Click Run All
+4. The app figures out execution order based on connections
+5. Each node runs in sequence, passing its output to connected nodes
+6. Results are saved to the database and shown in History
 
-1. Sign up or sign in to your account
-2. Click "New Workflow" from the dashboard
-3. Add nodes from the left sidebar
-4. Connect nodes by dragging from output to input handles
-5. Configure each node by clicking on it
-6. Save your workflow
+## Current Limitations
 
-### Running a Workflow
+- Video frame extraction is simulated
+- Image cropping is simulated
+- No undo/redo yet
+- No real-time collaboration
 
-1. Click the "Run" button in the toolbar
-2. View real-time execution in the History sidebar
-3. Inspect node results and outputs
+## Author
 
-### Node Types
-
-**Text Node**: Outputs static text that can be used as input for other nodes
-
-**Image Upload**: Upload and pass images to processing nodes
-
-**Video Upload**: Upload videos for frame extraction
-
-**LLM Node**: Process text with Google Gemini AI
-
-**Crop Image**: Crop uploaded images with specified dimensions
-
-**Extract Frame**: Extract frames from videos at specific timestamps
-
-## API Routes
-
-- `GET /api/workflows` - List all workflows
-- `POST /api/workflows` - Create new workflow
-- `GET /api/workflows/[id]` - Get specific workflow
-- `PUT /api/workflows/[id]` - Update workflow
-- `DELETE /api/workflows/[id]` - Delete workflow
-- `POST /api/execute` - Execute a workflow
-- `POST /api/llm/generate` - Generate text with LLM
-- `POST /api/upload` - Upload files
-
-## Security
-
-- All API routes require authentication
-- Row Level Security (RLS) enabled on all database tables
-- Users can only access their own workflows and executions
-- File uploads are scoped to authenticated users
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import project to Vercel
-3. Add environment variables
-4. Deploy
-
-### Other Platforms
-
-The app can be deployed to any platform that supports Next.js 14:
-- Netlify
-- Railway
-- AWS
-- Digital Ocean
-
-## Troubleshooting
-
-**Build Errors**: Ensure all environment variables are set correctly
-
-**Authentication Issues**: Check Supabase URL and keys
-
-**LLM Not Working**: Verify Google AI API key is valid
-
-**File Upload Fails**: Ensure storage bucket is created and public
+Built by Ashutosh
 
 ## License
 
 MIT
-
-## Support
-
-For issues or questions, please open an issue on GitHub.
